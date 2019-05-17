@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title></title>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.js"></script>
+        <script type="text/javascript" src="large-file-uploader.js"></script>   
+    </head>
+    <body>
+        <h1>Upload File</h1>
+        <p>This page demonstrates how to upload a large file by chunks.</p>
+        <form method="POST" action="" enctype="multipart/form-data" >
+            <input name="fileToUpload" type="file" />
+
+            <span style="color:green" id="uploadStatus"></span>
+            <span style="color:green" id="uploadProgress"></span>
+
+            <button id="beginUpload" class="uploaderControl">Begin</button>
+            <button id="continueUpload" class="uploaderControl">Continue</button>
+            <button id="pauseUpload" class="uploaderControl">Pause</button>
+            <button id="cancelUpload" class="uploaderControl">Cancel</button>
+        </form>
+
+        <script>          
+
+            $(function(){
+
+                $(".uploaderControl").hide();
+
+                var fileUploader = new LargeFileUploader();
+
+                fileUploader.setUrl("/upload-slice.php");
+                fileUploader.setSliceSize(5000 * 1024);
+
+                fileUploader.addEventListener("statuschange", function(e){
+                    $("#uploadStatus").text(e.status.toLowerCase());
+                    $(".uploaderControl").hide();
+                    if(e.status === "UNSTARTED"){
+                        $("#beginUpload").show();
+                    }else if(e.status === "UPLOADING"){
+                        $("#pauseUpload, #cancelUpload").show();
+                    }else if(e.status === "PAUSED"){
+                        $("#continueUpload, #cancelUpload").show();
+                    }
+                });
+
+                fileUploader.addEventListener("uploaded", function(e){
+                    var percentUploaded = Math.ceil(100 / e.slicesCount * (e.sliceIndex + 1));
+                    $("#uploadProgress").text(percentUploaded + "%");
+                });
+
+                $("#beginUpload").on("click", function(e){
+                    e.preventDefault();
+                    fileUploader.start();
+                });
+
+                $("#pauseUpload").on("click", function(e){
+                    e.preventDefault();
+                    fileUploader.pause();
+                });
+
+                $("#continueUpload").on("click", function(e){
+                    e.preventDefault();
+                    fileUploader.continue();
+                });
+
+                $("#cancelUpload").on("click", function(e){
+                    e.preventDefault();
+                    fileUploader.cancel();
+                });
+
+                $("input[name='fileToUpload']").on("change", function(e){
+                    var file = e.currentTarget.files[0];
+                    
+                    $("#uploadProgress").text("");
+                    $("#uploadStatus").text("");
+                    fileUploader.setFile(file);
+                });
+            });
+        </script>
+    </body>
+</html>
